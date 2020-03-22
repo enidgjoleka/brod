@@ -398,7 +398,7 @@ See also: https://github.com/klarna/brod/wiki/SASL-gssapi-(kerberos)-authenticat
 
 # Other API to play with/inspect kafka
 
-These functions open a connetion to kafka cluster, send a request,
+These functions open a connection to kafka cluster, send a request,
 await response and then close the connection.
 
 ```erlang
@@ -435,7 +435,7 @@ _build/brod_cli/rel/brod/bin/brod -h
 
 Disclaimer: This script is NOT designed for use cases where fault-tolerance is a hard requirement.
 As it may crash when e.g. kafka cluster is temporarily unreachable,
-or (for fetch command) when the parition leader migrates to another broker in the cluster.
+or (for fetch command) when the partition leader migrates to another broker in the cluster.
 
 ## brod-cli examples (with `alias brod=_build/brod_cli/rel/brod/bin/brod`):
 
