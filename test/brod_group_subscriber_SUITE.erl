@@ -97,7 +97,7 @@ init_per_group(_Group, Config) ->
 end_per_group(_Group, _Config) ->
   ok.
 
-common_init_per_testcase(Case, Config) ->
+common_init_per_testcase(_Case, Config) ->
   ClientId       = ?CLIENT_ID,
   BootstrapHosts = [{"localhost", 9092}],
   ClientConfig   = client_config(),
@@ -108,7 +108,7 @@ common_init_per_testcase(Case, Config) ->
   ok = brod:start_producer(ClientId, ?TOPIC4, _ProducerConfig = []),
   Config.
 
-common_end_per_testcase(Case, Config) when is_list(Config) ->
+common_end_per_testcase(_Case, Config) when is_list(Config) ->
   catch meck:unload(),
   %% Clean up the processes:
   case get(subscribers) of
@@ -345,9 +345,9 @@ t_2_members_subscribe_to_different_topics(Config) when is_list(Config) ->
      #{ timeout => 5000 },
      %% Run stage:
      begin
-       {ok, SubscriberPid1, _ConsumerPids1} =
+       {ok, _SubscriberPid1, _ConsumerPids1} =
          start_subscriber(Config, [?TOPIC2], InitArgs),
-       {ok, SubscriberPid2, _ConsumerPids2} =
+       {ok, _SubscriberPid2, _ConsumerPids2} =
          start_subscriber(Config, [?TOPIC3], InitArgs),
        %% Send messages to random partitions:
        lists:foreach(SendFun, L)
@@ -367,7 +367,6 @@ t_2_members_subscribe_to_different_topics(Config) when is_list(Config) ->
 %% not crash.
 t_2_members_one_partition(Config) when is_list(Config) ->
   Topic = ?TOPIC4,
-  MaxSeqNo = 100,
   InitArgs = #{},
   L = payloads(Config),
   SendFun =
@@ -379,9 +378,9 @@ t_2_members_one_partition(Config) when is_list(Config) ->
      %% Run stage:
      begin
        %% Start two subscribers competing for the partition:
-       {ok, SubscriberPid1, _ConsumerPids1} =
+       {ok, _SubscriberPid1, _ConsumerPids1} =
          start_subscriber(Config, [Topic], InitArgs),
-       {ok, SubscriberPid2, _ConsumerPids1} =
+       {ok, _SubscriberPid2, _ConsumerPids1} =
          start_subscriber(Config, [Topic], InitArgs),
        %% Send messages:
        lists:foreach(SendFun, L)
@@ -462,7 +461,7 @@ t_async_commit(Config) when is_list(Config) ->
      fun(_Ret, Trace) ->
          {BeforeRestart1, [_|AfterRestart1]} =
            ?split_trace_at(#{kind := emulate_restart}, Trace),
-         {BeforeRestart2, [_|AfterRestart2]} =
+         {_BeforeRestart2, [_|AfterRestart2]} =
            ?split_trace_at(#{kind := emulate_restart}, AfterRestart1),
          %% check that the message was processed once before 1st
          %% restart:
@@ -526,14 +525,14 @@ handled_messages(Trace) ->
 %%
 %% This function maintains a list of subscription states,
 %% and returns once all topic-partitions reach `subscribed' state.
-wait_for_subscribers([], _) ->
+wait_for_subscribers([]) ->
   #{};
-wait_for_subscribers(Topics, SubPid) ->
-  [A|T] = [ wait_for_subscribers(Topic, SubPid, 10)
+wait_for_subscribers(Topics) ->
+  [A|T] = [ wait_for_subscribers(Topic, 10)
           || Topic <- Topics],
   lists:foldl(fun maps:merge/2, A, T).
 
-wait_for_subscribers(Topic, SubPid, TimeoutSecs) ->
+wait_for_subscribers(Topic, TimeoutSecs) ->
   Timeout = TimeoutSecs * 1000,
   {ok, NumPartitions} = brod_client:get_partitions_count(?CLIENT_ID, Topic),
   %% Wait for start of brod_subscribers:
@@ -618,7 +617,7 @@ start_subscriber(Config, Topics, GroupConfig, ConsumerConfig, InitArgs) ->
                                          ?MODULE, InitArgs)
     end,
   put(subscribers, [SubscriberPid | Subscribers]),
-  Consumers = wait_for_subscribers(Topics, SubscriberPid),
+  Consumers = wait_for_subscribers(Topics),
   {ok, SubscriberPid, Consumers}.
 
 meck_subscribe_unsubscribe() ->
